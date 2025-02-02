@@ -14,7 +14,7 @@ import pandas as pd
 
 my_credentials = {
     "url": "https://us-south.ml.cloud.ibm.com",
-    "apikey": "365XI5fos2mqvLc3b_Ch6rVdTruwYWNjqiPL6F0WNOOL"
+    "apikey": ""
 }
 
 project_id = "d506c97c-6601-4c81-9d2e-26adf97f675e"
