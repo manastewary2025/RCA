@@ -1,0 +1,46 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_ACCOUNT_ID: "445406157753"  # Replace with your account ID if not automatically injected
+    AWS_DEFAULT_REGION: "us-west-1"
+    REPOSITORY_URI: "445406157753.dkr.ecr.us-west-1.amazonaws.com/sca-genai-assistant-mvp-ecr"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      #- $(aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 445406157753.dkr.ecr.us-west-1.amazonaws.com
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+  post_build:
+    commands:
+      - echo Pushing Docker image to ECR...
+      #- IMAGE_TAG=$CODEBUILD_BUILD_NUMBER
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      #- echo K8S Deployment
+      #- echo "Setting Environment Variables related to AWS CLI for Kube Config Setup"          
+      #- CREDENTIALS=$(aws sts assume-role --role-arn $EKS_KUBECTL_ROLE_ARN --role-session-name codebuild-kubectl --duration-seconds 900)
+      #- export AWS_ACCESS_KEY_ID="$(echo ${CREDENTIALS} | jq -r '.Credentials.AccessKeyId')"
+      #- export AWS_SECRET_ACCESS_KEY="$(echo ${CREDENTIALS} | jq -r '.Credentials.SecretAccessKey')"
+      #- export AWS_SESSION_TOKEN="$(echo ${CREDENTIALS} | jq -r '.Credentials.SessionToken')"
+      #- export AWS_EXPIRATION=$(echo ${CREDENTIALS} | jq -r '.Credentials.Expiration')
+      # Setup kubectl with our EKS Cluster              
+      #- echo "Update Kube Config"      
+      #- aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+      # Apply changes to our Application using kubectl
+      #- echo "Apply changes to kube manifests"
+      #- sed -i "s/{{IMAGE_TAG}}/$IMAGE_TAG/" ./kube-manifests/deployment-dev.yml             
+      #- kubectl apply -f ./kube-manifests/deployment-dev.yml
+      #- kubectl apply -f ./kube-manifests/service-dev.yml
+      #- echo "Completed applying changes to Kubernetes Objects"           
+      # Create Artifacts which we can use if we want to continue our pipeline for other stages
+      - printf '[{"name":"deployment-definition.yml","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > build.json
+artifacts:
+  files:
+    - build.json
+    #- twistlock-scan-results*

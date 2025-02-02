@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sca-genai-api
+  labels:
+    app: sca-genai-api
+spec:
+  replicas: 1  # Number of pods to run
+  selector:
+    matchLabels:
+      app: sca-genai-api
+  template:
+    metadata:
+      labels:
+        app: sca-genai-api
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 2000
+        fsGroup: 2000
+      containers:
+      - name: sca-genai-api
+        image: 445406157753.dkr.ecr.us-east-2.amazonaws.com/sca-genai-assistant-mvp-ecr:{{IMAGE_TAG}}  # The Docker image of your Flask app
+        securityContext:
+          allowPrivilegeEscalation: false
+        envFrom:
+        - secretRef:
+            name: api-env-secret
+        ports:
+        - containerPort: 5000           # The port your Flask app runs on
+        # Liveness Probe (checks if the app is running)
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 5000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 3
+
+        # Readiness Probe (checks if the app is ready to serve traffic)
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 5000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 2
+          failureThreshold: 3
+        env:
+        - name: FLASK_APP               # Set FLASK_APP environment variable
+          value: "./assistant_api/chatbot-api/api/src/index.py"
+        - name: FLASK_ENV               # Optional: Set environment to development
+          value: "development"
+        - name: retrival_path_ui
+          value: "./../data/docs/"
+        volumeMounts:
+        - name: secret-volume
+          mountPath: "/etc/secrets"  # Mounting secret at /etc/secrets
+          readOnly: true
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: api-env-secret  # Referring to the secret name
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "sca-genai-api-aws-secrets"

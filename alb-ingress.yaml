@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sca-genai-ingress
+  annotations:
+    # This annotation tells AWS to use an ALB instead of the default NLB
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # Use ACM certificate for SSL
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-2:445406157753:certificate/501a9a54-849e-443c-bc48-6c317d3897bf
+    # Redirect HTTP to HTTPS
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # Use HTTPS for the listener
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/target-type: "ip"
+spec:
+  rules:
+    - host: ibm-supplychainensemble.com  # Replace with your domain name
+      http:
+        paths:
+          # Route to api for /socket.io, /reply
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: sca-genai-api-service
+                port:
+                  number: 80
+          - path: /reply
+            pathType: Prefix
+            backend:
+              service:
+                name: sca-genai-api-service
+                port:
+                  number: 80
+          # Route to ui for any other paths
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sca-genai-ui-service
+                port:
+                  number: 80
