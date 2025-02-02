@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Chat</title>
+    <!-- Updated socket.io version to 4.7.5 to fix high vulnerability issue present in 4.0.0 version found during Whitesource security check-->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #chat-box {
+            height: 300px;
+            border: 1px solid #ddd;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        #message-input {
+            width: calc(100% - 90px);
+            padding: 10px;
+        }
+        #send-button {
+            width: 80px;
+            padding: 10px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-box"></div>
+        <input type="text" id="message-input" placeholder="Type your message here...">
+        <button id="send-button">Send</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io(); // Connect to the server
+
+            // Select HTML elements
+            const chatBox = document.getElementById('chat-box');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+
+            // Send message when the button is clicked
+            sendButton.addEventListener('click', () => {
+                const message = messageInput.value;
+                if (message.trim()) {
+                    socket.send(message);
+                    messageInput.value = ''; // Clear input field
+                }
+            });
+
+            // Handle messages from the server
+            socket.on('response', (data) => {
+                const message = data.message;
+                const messageElement = document.createElement('div');
+                messageElement.textContent = 'Server: ' + message;
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+            });
+
+            // Handle connection and error events
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('Connection error:', error);
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+            });
+        });
+    </script>
+</body>
+</html>
