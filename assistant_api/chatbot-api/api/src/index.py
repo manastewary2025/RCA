@@ -1,7 +1,3 @@
-""" IBM Confidential
-    6949XXX 
-    © Copyright IBM Corp. 2023 
-"""
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
